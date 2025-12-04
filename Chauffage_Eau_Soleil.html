@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Chauffage solaire de 2 seaux (noir vs manteau isolant)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f4f4f4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+    h1 {
+      font-size: 22px;
+      margin-bottom: 5px;
+      text-align: center;
+    }
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+      width: 100%;
+      max-width: 1100px;
+    }
+    .panel {
+      background: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      min-width: 280px;
+      flex: 1;
+    }
+    .panel h2 {
+      font-size: 18px;
+      margin-top: 0;
+    }
+    .controls input[type="range"] {
+      width: 100%;
+    }
+    .inline-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      margin-top: 4px;
+      margin-bottom: 2px;
+    }
+    .buttons {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    #startBtn { background: #4caf50; color: white; }
+    #stopBtn  { background: #f44336; color: white; }
+    #resetBtn { background: #607d8b; color: white; }
+
+    .values {
+      margin-top: 10px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .small {
+      font-size: 12px;
+      color: #555;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+    th, td {
+      padding: 4px 6px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background: #f0f0f0;
+    }
+
+    .color-box {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      margin-right: 4px;
+    }
+
+    .time-display {
+      margin-top: 8px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    canvas {
+      background: #fafafa;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+
+    select {
+      width: 100%;
+      padding: 4px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 13px;
+      margin-top: 4px;
+      margin-bottom: 4px;
+      background: #fafafa;
+    }
+  </style>
+</head>
+<body>
+  <h1>Chauffage solaire de 2 seaux d'eau (noir simple vs noir + manteau isolant)</h1>
+
+  <div class="container">
+    <!-- Panneau gauche : paramètres -->
+    <div class="panel">
+      <h2>Paramètres de la journée (24 h)</h2>
+      <div class="controls">
+
+        <!-- Sélecteur de pays -->
+        <div class="inline-label">
+          <span>Pays / zone</span>
+        </div>
+        <select id="countrySelect">
+          <option value="maroc">Maroc (zone très ensoleillée)</option>
+          <option value="france">France (tempéré)</option>
+          <option value="canada">Canada (continental)</option>
+          <option value="nord">Pays nordiques</option>
+        </select>
+
+        <!-- Sélecteur de saison -->
+        <div class="inline-label">
+          <span>Saison</span>
+        </div>
+        <select id="seasonSelect">
+          <option value="hiver">Hiver</option>
+          <option value="printemps">Printemps</option>
+          <option value="ete" selected>Été</option>
+          <option value="automne">Automne</option>
+        </select>
+        <div class="small">
+          Température extérieure et irradiance max (à midi) typiques pour le pays + la saison.
+          Tu peux ajuster ensuite avec les sliders.
+        </div>
+
+        <!-- Température extérieure (constante sur la journée) -->
+        <div class="inline-label" style="margin-top:8px;">
+          <span>Température extérieure (air)</span>
+          <span><span id="textTempExt">26</span> °C</span>
+        </div>
+        <input type="range" id="tempExtSlider" min="-20" max="50" value="26">
+
+        <!-- Irradiance max (à midi) -->
+        <div class="inline-label" style="margin-top:8px;">
+          <span>Irradiance max à midi</span>
+          <span><span id="textIrrad">800</span> W/m²</span>
+        </div>
+        <input type="range" id="irradSlider" min="0" max="1000" value="800">
+        <div class="small">
+          Soleil sur 24 h : 0 W/m² la nuit, cloche entre 6 h et 18 h, pic = valeur ci-dessus.
+        </div>
+
+        <!-- Surface -->
+        <div class="inline-label" style="margin-top:8px;">
+          <span>Surface exposée (chaque seau)</span>
+          <span><span id="textSurface">0.50</span> m²</span>
+        </div>
+        <input type="range" id="surfaceSlider" min="20" max="100" value="50">
+        <div class="small">20 = 0.20 m², 100 = 1.00 m²</div>
+
+        <!-- Température initiale -->
+        <div class="inline-label" style="margin-top:8px;">
+          <span>Température initiale de l'eau</span>
+          <span><span id="textTempInit">26</span> °C</span>
+        </div>
+        <input type="range" id="tempInitSlider" min="0" max="40" value="26">
+
+        <!-- Volume d'eau -->
+        <div class="inline-label" style="margin-top:8px;">
+          <span>Volume d'eau (par seau)</span>
+          <span><span id="textVolume">50</span> L</span>
+        </div>
+        <input type="range" id="volumeSlider" min="10" max="100" value="50">
+        <div class="small">1 L ≈ 1 kg. Moins de volume → chauffe plus vite.</div>
+
+        <!-- Boutons -->
+        <div class="buttons">
+          <button id="startBtn">Démarrer</button>
+          <button id="stopBtn">Pause</button>
+          <button id="resetBtn">Reset</button>
+        </div>
+
+        <div class="time-display">
+          Temps simulé : <span id="simTime">0 h 00 min</span> / 24 h
+        </div>
+
+        <div class="values">
+          <div>Masse eau / seau : <strong><span id="textMass">50</span> kg</strong></div>
+          <div>c (eau) : <strong>4180 J/kg·°C</strong></div>
+          <div>h seau noir simple : <strong>8 W/m²·°C</strong></div>
+          <div>h seau noir + manteau (laine/tapis) : <strong>0.8 W/m²·°C</strong></div>
+          <div class="small" style="margin-top:6px;">
+            À 1 bar, on force T ≤ 100 °C (ébullition atmosphérique).
+            La simulation s'arrête automatiquement après 24 h.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panneau droit : tableau + graphique -->
+    <div class="panel">
+      <h2>Comparaison des 2 seaux</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Seau</th>
+            <th>Description</th>
+            <th>Température de l'eau</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="color-box" style="background:#e53935;"></span>Seau 1</td>
+            <td>Noir simple (sans isolation)</td>
+            <td><span id="tempS1">26.0</span> °C</td>
+          </tr>
+          <tr>
+            <td><span class="color-box" style="background:#1e88e5;"></span>Seau 2</td>
+            <td>Noir + manteau isolant (laine / tapis / peau)</td>
+            <td><span id="tempS2">26.0</span> °C</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="margin-top:10px; font-size:13px;">
+        <strong>Graphique :</strong> température de chaque seau en fonction de l'heure (0 → 24 h).
+      </div>
+
+      <canvas id="graphCanvas" width="650" height="300" style="margin-top:10px;"></canvas>
+
+      <div class="small" style="margin-top:6px;">
+        Rouge = seau noir simple, bleu = seau noir + manteau isolant.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Constantes physiques
+    const C_EAU   = 4180;              // J/kg·°C
+    const H_SIMPLE = 8;                // W/(m²·°C) seau noir simple
+    const H_MANTEAU = 0.8;             // W/(m²·°C) seau noir + manteau isolant
+    const DT_SIM  = 60;                // 60 s par tick
+    const MS_PER_TICK = 200;           // 200 ms entre steps
+    const T_MAX = 100;                 // °C (1 bar)
+    const DAY_SECONDS = 24 * 3600;     // 24 h
+
+    // Données climatiques approximatives (temp ext °C, irradiance max W/m²)
+    const climateData = {
+      maroc: {
+        hiver:     { temp: 15, irr: 500 },
+        printemps: { temp: 22, irr: 700 },
+        ete:       { temp: 35, irr: 900 },
+        automne:   { temp: 25, irr: 650 }
+      },
+      france: {
+        hiver:     { temp: 5,  irr: 200 },
+        printemps: { temp: 15, irr: 500 },
+        ete:       { temp: 25, irr: 800 },
+        automne:   { temp: 12, irr: 400 }
+      },
+      canada: {
+        hiver:     { temp: -10, irr: 150 },
+        printemps: { temp: 5,   irr: 450 },
+        ete:       { temp: 22,  irr: 750 },
+        automne:   { temp: 5,   irr: 300 }
+      },
+      nord: {
+        hiver:     { temp: -15, irr: 100 },
+        printemps: { temp: 0,   irr: 300 },
+        ete:       { temp: 15,  irr: 600 },
+        automne:   { temp: 0,   irr: 250 }
+      }
+    };
+
+    // Paramètres UI
+    const countrySelect  = document.getElementById('countrySelect');
+    const seasonSelect   = document.getElementById('seasonSelect');
+
+    const tempExtSlider  = document.getElementById('tempExtSlider');
+    const irradSlider    = document.getElementById('irradSlider');
+    const surfaceSlider  = document.getElementById('surfaceSlider');
+    const tempInitSlider = document.getElementById('tempInitSlider');
+    const volumeSlider   = document.getElementById('volumeSlider');
+
+    const textTempExt  = document.getElementById('textTempExt');
+    const textIrrad    = document.getElementById('textIrrad');
+    const textSurface  = document.getElementById('textSurface');
+    const textTempInit = document.getElementById('textTempInit');
+    const textVolume   = document.getElementById('textVolume');
+    const textMass     = document.getElementById('textMass');
+    const simTimeSpan  = document.getElementById('simTime');
+
+    const tempS1Span = document.getElementById('tempS1');
+    const tempS2Span = document.getElementById('tempS2');
+
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn  = document.getElementById('stopBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    // Graph
+    const canvas = document.getElementById('graphCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // État global
+    let tempExt = parseFloat(tempExtSlider.value);
+    let irradMax   = parseFloat(irradSlider.value);   // irradiance max à midi
+    let surface = parseFloat(surfaceSlider.value) / 100.0;
+    let tempInit = parseFloat(tempInitSlider.value);
+    let volumeL = parseFloat(volumeSlider.value);   // litres
+    let massEau = volumeL;                         // kg (≈ 1 kg / L)
+    let simTimeSeconds = 0;
+    let intervalId = null;
+
+    // Deux seaux : même absorption (noir), hConv différent
+    const buckets = [
+      {
+        name: "Seau noir simple",
+        absorption: 0.95,          // noir mat
+        hConv: H_SIMPLE,
+        temp: tempInit,
+        color: "#e53935",
+        history: []
+      },
+      {
+        name: "Seau noir + manteau isolant",
+        absorption: 0.95,          // manteau noir absorbe aussi
+        hConv: H_MANTEAU,
+        temp: tempInit,
+        color: "#1e88e5",
+        history: []
+      }
+    ];
+
+    // Irradiance en fonction de l'heure de la journée
+    // 0 W/m² de 0h à 6h et de 18h à 24h
+    // cloche sinus entre 6h et 18h, max = irradMax à 12h
+    function getIrradianceAtTime(tSec) {
+      const hour = (tSec / 3600); // 0 → 24
+      if (hour < 6 || hour > 18) return 0;
+      const x = (hour - 6) / 12; // 0 → 1
+      const factor = Math.sin(Math.PI * x); // 0 → 1 → 0
+      return Math.max(0, irradMax * factor);
+    }
+
+    // Appliquer un preset pays + saison
+    function applyClimatePreset() {
+      const country = countrySelect.value;
+      const season  = seasonSelect.value;
+      const data = climateData[country][season];
+
+      tempExtSlider.value = data.temp;
+      irradSlider.value   = data.irr;
+
+      tempExt  = data.temp;
+      irradMax = data.irr;
+
+      textTempExt.textContent = data.temp.toString();
+      textIrrad.textContent   = data.irr.toString();
+    }
+
+    countrySelect.addEventListener('change', applyClimatePreset);
+    seasonSelect.addEventListener('change', applyClimatePreset);
+
+    // Sliders events
+    tempExtSlider.addEventListener('input', () => {
+      tempExt = parseFloat(tempExtSlider.value);
+      textTempExt.textContent = tempExtSlider.value;
+    });
+
+    irradSlider.addEventListener('input', () => {
+      irradMax = parseFloat(irradSlider.value);
+      textIrrad.textContent = irradSlider.value;
+    });
+
+    surfaceSlider.addEventListener('input', () => {
+      surface = parseFloat(surfaceSlider.value) / 100.0;
+      textSurface.textContent = surface.toFixed(2);
+    });
+
+    tempInitSlider.addEventListener('input', () => {
+      tempInit = parseFloat(tempInitSlider.value);
+      textTempInit.textContent = tempInitSlider.value;
+    });
+
+    volumeSlider.addEventListener('input', () => {
+      volumeL = parseFloat(volumeSlider.value);
+      massEau = volumeL; // 1 L ≈ 1 kg
+      textVolume.textContent = volumeSlider.value;
+      textMass.textContent   = massEau.toFixed(0);
+    });
+
+    function formatSimTime(sec) {
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      return `${h} h ${m.toString().padStart(2, '0')} min`;
+    }
+
+    function updateTempTable() {
+      tempS1Span.textContent = buckets[0].temp.toFixed(1);
+      tempS2Span.textContent = buckets[1].temp.toFixed(1);
+    }
+
+    // Step pour un seau
+    function stepBucket(bucket) {
+      const currentIrr = getIrradianceAtTime(simTimeSeconds);
+      const P_sun = currentIrr * surface * bucket.absorption;
+      let deltaT = bucket.temp - tempExt;
+      let P_loss = 0;
+      if (deltaT > 0) {
+        P_loss = bucket.hConv * surface * deltaT;
+      }
+      const dTdt = (P_sun - P_loss) / (massEau * C_EAU);
+      bucket.temp += dTdt * DT_SIM;
+
+      if (bucket.temp > T_MAX) {
+        bucket.temp = T_MAX;
+      }
+
+      bucket.history.push({ t: simTimeSeconds, T: bucket.temp });
+      if (bucket.history.length > 500) {
+        bucket.history.shift();
+      }
+    }
+
+    function drawGraph() {
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const marginLeft = 40;
+      const marginRight = 10;
+      const marginTop = 10;
+      const marginBottom = 20;
+
+      const xMin = marginLeft;
+      const xMax = w - marginRight;
+      const yMin = marginTop;
+      const yMax = h - marginBottom;
+
+      // Axes
+      ctx.strokeStyle = "#ccc";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(xMin, yMax);
+      ctx.lineTo(xMax, yMax);
+      ctx.moveTo(xMin, yMin);
+      ctx.lineTo(xMin, yMax);
+      ctx.stroke();
+
+      // Graduations température (0,25,50,75,100)
+      ctx.fillStyle = "#555";
+      ctx.font = "11px Arial";
+      for (let T = 0; T <= 100; T += 25) {
+        const y = yMax - (T / 100) * (yMax - yMin);
+        ctx.strokeStyle = "#eee";
+        ctx.beginPath();
+        ctx.moveTo(xMin, y);
+        ctx.lineTo(xMax, y);
+        ctx.stroke();
+
+        ctx.fillStyle = "#555";
+        ctx.fillText(T.toString(), 5, y + 3);
+      }
+
+      // Graduations temps (0, 6, 12, 18, 24 h)
+      for (let hTick = 0; hTick <= 24; hTick += 6) {
+        const t = hTick * 3600;
+        const x = xMin + (t / DAY_SECONDS) * (xMax - xMin);
+        ctx.strokeStyle = "#eee";
+        ctx.beginPath();
+        ctx.moveTo(x, yMax);
+        ctx.lineTo(x, yMin);
+        ctx.stroke();
+
+        ctx.fillStyle = "#555";
+        ctx.fillText(hTick.toString() + " h", x - 10, yMax + 12);
+      }
+
+      // Courbes
+      buckets.forEach(bucket => {
+        if (bucket.history.length < 2) return;
+        ctx.strokeStyle = bucket.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        bucket.history.forEach((pt, idx) => {
+          const x = xMin + (pt.t / DAY_SECONDS) * (xMax - xMin);
+          const y = yMax - (Math.max(0, Math.min(100, pt.T)) / 100) * (yMax - yMin);
+          if (idx === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+      });
+
+      // Légendes axes
+      ctx.fillStyle = "#333";
+      ctx.fillText("Temps (heures)", (w / 2) - 40, h - 4);
+      ctx.save();
+      ctx.translate(12, h / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText("Température (°C)", -40, 0);
+      ctx.restore();
+    }
+
+    function stepAll() {
+      // Stop auto à 24 h
+      if (simTimeSeconds >= DAY_SECONDS) {
+        if (intervalId !== null) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+        return;
+      }
+
+      simTimeSeconds += DT_SIM;
+      buckets.forEach(b => stepBucket(b));
+      simTimeSpan.textContent = formatSimTime(simTimeSeconds);
+      updateTempTable();
+      drawGraph();
+    }
+
+    // Boutons
+    startBtn.addEventListener('click', () => {
+      if (intervalId !== null) return;
+      if (simTimeSeconds === 0) {
+        buckets.forEach(b => {
+          b.temp = tempInit;
+          b.history = [];
+        });
+      }
+      intervalId = setInterval(stepAll, MS_PER_TICK);
+    });
+
+    stopBtn.addEventListener('click', () => {
+      if (intervalId !== null) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      if (intervalId !== null) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+      simTimeSeconds = 0;
+      tempExt  = parseFloat(tempExtSlider.value);
+      irradMax = parseFloat(irradSlider.value);
+      surface  = parseFloat(surfaceSlider.value) / 100.0;
+      tempInit = parseFloat(tempInitSlider.value);
+      volumeL  = parseFloat(volumeSlider.value);
+      massEau  = volumeL;
+
+      textTempExt.textContent  = tempExtSlider.value;
+      textIrrad.textContent    = irradSlider.value;
+      textSurface.textContent  = surface.toFixed(2);
+      textTempInit.textContent = tempInitSlider.value;
+      textVolume.textContent   = volumeL.toFixed(0);
+      textMass.textContent     = massEau.toFixed(0);
+
+      buckets.forEach(b => {
+        b.temp = tempInit;
+        b.history = [];
+      });
+
+      simTimeSpan.textContent = formatSimTime(0);
+      updateTempTable();
+      drawGraph();
+    });
+
+    // Init
+    textVolume.textContent = volumeL.toFixed(0);
+    textMass.textContent   = massEau.toFixed(0);
+    applyClimatePreset();   // preset par défaut
+    updateTempTable();
+    drawGraph();
+  </script>
+</body>
+</html>
